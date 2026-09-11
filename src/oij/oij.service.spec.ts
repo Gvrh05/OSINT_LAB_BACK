@@ -7,9 +7,11 @@ describe('OijService', () => {
   ].join('\n');
 
   beforeEach(() => {
-    jest.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(Buffer.from(csv, 'utf8'), { status: 200 }),
-    );
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(Buffer.from(csv, 'utf8'), { status: 200 }),
+      );
   });
 
   afterEach(() => jest.restoreAllMocks());
