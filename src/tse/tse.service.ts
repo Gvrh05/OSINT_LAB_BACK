@@ -49,6 +49,18 @@ export interface LoadMetadata {
   archivo: string;
 }
 
+export interface TseStatsData {
+  total: number;
+  distritosElectorales: number;
+  porProvincia: {
+    provincia: string;
+    electores: number;
+    porcentaje: number;
+    cantones: { canton: string; electores: number }[];
+  }[];
+  metadata: LoadMetadata | null;
+}
+
 @Injectable()
 export class TseService implements OnApplicationBootstrap {
   private readonly logger = new Logger(TseService.name);
@@ -56,6 +68,7 @@ export class TseService implements OnApplicationBootstrap {
   private distritoMap = new Map<string, DistritoElectoral>();
   private metadata: LoadMetadata | null = null;
   private loading = false;
+  private statsCache: TseStatsData | null = null;
 
   onApplicationBootstrap() {
     this.downloadAndLoadPadron().catch((error) => {
@@ -123,6 +136,7 @@ export class TseService implements OnApplicationBootstrap {
         registros: this.padron.length,
         archivo: padronEntry.entryName,
       };
+      this.statsCache = null;
 
       this.logger.log(
         `${this.padron.length} electores cargados en memoria (${new Date(fecha).toLocaleString()}).`,
@@ -325,8 +339,9 @@ export class TseService implements OnApplicationBootstrap {
     };
   }
 
-  getStats() {
+  getStats(): TseStatsData {
     this.exigirDatos();
+    if (this.statsCache) return this.statsCache;
 
     const porProvincia = new Map<string, number>();
     const porCanton = new Map<string, number>();
@@ -339,7 +354,7 @@ export class TseService implements OnApplicationBootstrap {
       );
     }
 
-    return {
+    this.statsCache = {
       total: this.padron.length,
       distritosElectorales: this.distritoMap.size,
       porProvincia: [...porProvincia.entries()]
@@ -355,6 +370,7 @@ export class TseService implements OnApplicationBootstrap {
         .sort((a, b) => b.electores - a.electores),
       metadata: this.metadata,
     };
+    return this.statsCache;
   }
 
   getCantones(provincia: string) {

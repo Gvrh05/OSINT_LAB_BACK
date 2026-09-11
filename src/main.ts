@@ -9,10 +9,19 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Permitir conexión desde el frontend React/Vite
+  const configuredOrigins = (process.env.FRONTEND_URL ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: (process.env.FRONTEND_URL ?? 'http://localhost:5173')
-      .split(',')
-      .map((origin) => origin.trim()),
+    origin: [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:5174',
+      'http://127.0.0.1:5174',
+      ...configuredOrigins,
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

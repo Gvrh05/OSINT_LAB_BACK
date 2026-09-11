@@ -46,6 +46,9 @@ lerna-debug.log*
 .temp
 .tmp
 
+# OSM/Overpass disk cache
+/.cache
+
 # Runtime data
 pids
 *.pid
