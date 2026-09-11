@@ -15,8 +15,13 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return the API name', () => {
-      expect(appController.getHello()).toBe('OSINT CR API');
+    it('debe exponer información del proyecto y sus rutas', () => {
+      const info = appController.getHello() as {
+        proyecto: string;
+        rutas: { tse: { download: string } };
+      };
+      expect(info.proyecto).toContain('OSINT');
+      expect(info.rutas.tse.download).toContain('/api/tse/download');
     });
   });
 });

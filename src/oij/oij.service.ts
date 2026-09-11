@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
 import { parse } from 'csv-parse/sync';
 
@@ -27,8 +24,17 @@ export interface OijRecord {
 }
 
 const OIJ_COLUMNS = [
-  'Delito', 'SubDelito', 'Fecha', 'Victima', 'SubVictima', 'Edad',
-  'Sexo', 'Nacionalidad', 'Provincia', 'Canton', 'Distrito',
+  'Delito',
+  'SubDelito',
+  'Fecha',
+  'Victima',
+  'SubVictima',
+  'Edad',
+  'Sexo',
+  'Nacionalidad',
+  'Provincia',
+  'Canton',
+  'Distrito',
 ] as const;
 
 interface SearchOptions {
@@ -103,16 +109,13 @@ export class OijService {
   }
 
   private async fetchAndNormalize(year: number): Promise<OijRecord[]> {
-
     try {
       const response = await fetch(this.getSourceUrl(year), {
         signal: AbortSignal.timeout(30_000),
       });
 
       if (!response.ok) {
-        throw new Error(
-          `La fuente respondió con HTTP ${response.status}`,
-        );
+        throw new Error(`La fuente respondió con HTTP ${response.status}`);
       }
 
       const arrayBuffer = await response.arrayBuffer();
@@ -130,7 +133,7 @@ export class OijService {
         relax_column_count: true,
         trim: true,
         bom: true,
-      }) as string[][];
+      });
 
       const rawRecords = this.rowsToRecords(rows);
 
@@ -143,10 +146,7 @@ export class OijService {
 
       return records;
     } catch (error) {
-      console.error(
-        'Error cargando datos del OIJ:',
-        error,
-      );
+      console.error('Error cargando datos del OIJ:', error);
 
       /*
        * Si ya teníamos datos en memoria y la fuente externa
@@ -198,8 +198,7 @@ export class OijService {
       return false;
     }
 
-    const elapsed =
-      Date.now() - cacheDate.getTime();
+    const elapsed = Date.now() - cacheDate.getTime();
 
     return elapsed < this.cacheDuration;
   }
@@ -208,64 +207,56 @@ export class OijService {
    * El portal puede entregar archivos con codificaciones
    * distintas de UTF-8.
    */
- private decodeCsv(buffer: Buffer): string {
-  // UTF-8 con BOM
-  if (
-    buffer.length >= 3 &&
-    buffer[0] === 0xef &&
-    buffer[1] === 0xbb &&
-    buffer[2] === 0xbf
-  ) {
-    return new TextDecoder('utf-8').decode(buffer);
-  }
+  private decodeCsv(buffer: Buffer): string {
+    // UTF-8 con BOM
+    if (
+      buffer.length >= 3 &&
+      buffer[0] === 0xef &&
+      buffer[1] === 0xbb &&
+      buffer[2] === 0xbf
+    ) {
+      return new TextDecoder('utf-8').decode(buffer);
+    }
 
-  // UTF-16 LE con BOM
-  if (
-    buffer.length >= 2 &&
-    buffer[0] === 0xff &&
-    buffer[1] === 0xfe
-  ) {
-    return new TextDecoder('utf-16le').decode(buffer);
-  }
+    // UTF-16 LE con BOM
+    if (buffer.length >= 2 && buffer[0] === 0xff && buffer[1] === 0xfe) {
+      return new TextDecoder('utf-16le').decode(buffer);
+    }
 
-  // Detectar UTF-16 LE aunque no tenga BOM.
-  // Si hay muchos bytes nulos, probablemente es UTF-16.
-  const sampleLength = Math.min(buffer.length, 200);
-  let nullBytes = 0;
+    // Detectar UTF-16 LE aunque no tenga BOM.
+    // Si hay muchos bytes nulos, probablemente es UTF-16.
+    const sampleLength = Math.min(buffer.length, 200);
+    let nullBytes = 0;
 
-  for (let i = 0; i < sampleLength; i++) {
-    if (buffer[i] === 0x00) {
-      nullBytes++;
+    for (let i = 0; i < sampleLength; i++) {
+      if (buffer[i] === 0x00) {
+        nullBytes++;
+      }
+    }
+
+    if (nullBytes > sampleLength * 0.1) {
+      return new TextDecoder('utf-16le').decode(buffer);
+    }
+
+    // Intentar UTF-8 normal
+    try {
+      return new TextDecoder('utf-8', {
+        fatal: true,
+      }).decode(buffer);
+    } catch {
+      // Último recurso para archivos Windows/Latin
+      return new TextDecoder('windows-1252').decode(buffer);
     }
   }
-
-  if (nullBytes > sampleLength * 0.1) {
-    return new TextDecoder('utf-16le').decode(buffer);
-  }
-
-  // Intentar UTF-8 normal
-  try {
-    return new TextDecoder('utf-8', {
-      fatal: true,
-    }).decode(buffer);
-  } catch {
-    // Último recurso para archivos Windows/Latin
-    return new TextDecoder('windows-1252').decode(buffer);
-  }
-}
 
   /**
    * Detecta si el CSV utiliza coma, punto y coma o tabulación.
    */
   private detectDelimiter(content: string): string {
-    const firstLine =
-      content
-        .split(/\r?\n/)
-        .find((line) => line.trim()) ?? '';
+    const firstLine = content.split(/\r?\n/).find((line) => line.trim()) ?? '';
 
     const commas = (firstLine.match(/,/g) ?? []).length;
-    const semicolons =
-      (firstLine.match(/;/g) ?? []).length;
+    const semicolons = (firstLine.match(/;/g) ?? []).length;
     const tabs = (firstLine.match(/\t/g) ?? []).length;
 
     if (semicolons > commas && semicolons > tabs) {
@@ -303,10 +294,7 @@ export class OijService {
       edad: this.getField(row, 'Edad'),
       sexo: this.getField(row, 'Sexo'),
 
-      nacionalidad: this.getField(
-        row,
-        'Nacionalidad',
-      ),
+      nacionalidad: this.getField(row, 'Nacionalidad'),
 
       provincia: this.getField(row, 'Provincia'),
       canton: this.getField(row, 'Canton'),
@@ -318,10 +306,7 @@ export class OijService {
    * Permite tolerar pequeñas diferencias en los nombres
    * de las columnas.
    */
-  private getField(
-    row: Record<string, string>,
-    field: string,
-  ): string {
+  private getField(row: Record<string, string>, field: string): string {
     const wanted = this.normalizeText(field);
 
     const foundKey = Object.keys(row).find(
@@ -356,21 +341,13 @@ export class OijService {
     const year = this.resolveYear(options.year);
     const records = await this.loadData(year);
 
-    const query = this.normalizeText(
-      options.q ?? '',
-    );
+    const query = this.normalizeText(options.q ?? '');
 
-    const province = this.normalizeText(
-      options.province ?? '',
-    );
+    const province = this.normalizeText(options.province ?? '');
 
-    const canton = this.normalizeText(
-      options.canton ?? '',
-    );
+    const canton = this.normalizeText(options.canton ?? '');
 
-    const crime = this.normalizeText(
-      options.crime ?? '',
-    );
+    const crime = this.normalizeText(options.crime ?? '');
 
     const requestedPage = Number.isFinite(options.page)
       ? Math.trunc(options.page!)
@@ -381,32 +358,18 @@ export class OijService {
 
     const page = Math.max(requestedPage, 1);
 
-    const limit = Math.min(
-      Math.max(requestedLimit, 1),
-      100,
-    );
+    const limit = Math.min(Math.max(requestedLimit, 1), 100);
 
     const filtered = records.filter((record) => {
-      if (
-        province &&
-        this.normalizeText(record.provincia) !== province
-      ) {
+      if (province && this.normalizeText(record.provincia) !== province) {
         return false;
       }
 
-      if (
-        canton &&
-        this.normalizeText(record.canton) !== canton
-      ) {
+      if (canton && this.normalizeText(record.canton) !== canton) {
         return false;
       }
 
-      if (
-        crime &&
-        !this.normalizeText(record.delito).includes(
-          crime,
-        )
-      ) {
+      if (crime && !this.normalizeText(record.delito).includes(crime)) {
         return false;
       }
 
@@ -445,10 +408,7 @@ export class OijService {
 
     const start = (page - 1) * limit;
 
-    const results = filtered.slice(
-      start,
-      start + limit,
-    );
+    const results = filtered.slice(start, start + limit);
 
     return {
       query: options.q?.trim() ?? '',
@@ -468,8 +428,13 @@ export class OijService {
     const records = await this.loadData(year);
 
     const officialProvinces = new Set([
-      'SAN JOSE', 'ALAJUELA', 'CARTAGO', 'HEREDIA',
-      'GUANACASTE', 'PUNTARENAS', 'LIMON',
+      'SAN JOSE',
+      'ALAJUELA',
+      'CARTAGO',
+      'HEREDIA',
+      'GUANACASTE',
+      'PUNTARENAS',
+      'LIMON',
     ]);
 
     const provinces = new Set(
@@ -487,23 +452,15 @@ export class OijService {
             this.normalizeText(record.provincia).toUpperCase(),
           ),
         )
-        .map(
-          (record) =>
-            `${record.provincia}|${record.canton}`,
-        )
+        .map((record) => `${record.provincia}|${record.canton}`)
         .filter((value) => !value.endsWith('|')),
     );
 
     const crimes = this.countBy(
-      records
-        .map((record) => record.delito)
-        .filter(Boolean),
+      records.map((record) => record.delito).filter(Boolean),
     );
 
-    const mostFrequentCrime =
-      crimes.length > 0
-        ? crimes[0].name
-        : undefined;
+    const mostFrequentCrime = crimes.length > 0 ? crimes[0].name : undefined;
 
     return {
       totalRecords: records.length,
@@ -511,8 +468,7 @@ export class OijService {
       totalProvinces: provinces.size,
       totalCantons: cantons.size,
       mostFrequentCrime,
-      lastUpdated:
-        this.cacheDates.get(year)?.toISOString() ?? null,
+      lastUpdated: this.cacheDates.get(year)?.toISOString() ?? null,
     };
   }
 
@@ -523,8 +479,13 @@ export class OijService {
     const records = await this.loadData();
 
     const officialProvinces = new Set([
-      'SAN JOSE', 'ALAJUELA', 'CARTAGO', 'HEREDIA',
-      'GUANACASTE', 'PUNTARENAS', 'LIMON',
+      'SAN JOSE',
+      'ALAJUELA',
+      'CARTAGO',
+      'HEREDIA',
+      'GUANACASTE',
+      'PUNTARENAS',
+      'LIMON',
     ]);
 
     const provinces = [
@@ -538,17 +499,11 @@ export class OijService {
     ].sort();
 
     const crimes = [
-      ...new Set(
-        records
-          .map((record) => record.delito)
-          .filter(Boolean),
-      ),
+      ...new Set(records.map((record) => record.delito).filter(Boolean)),
     ].sort();
 
     const cantons = [
-      ...new Set(
-        records.map((record) => record.canton).filter(Boolean),
-      ),
+      ...new Set(records.map((record) => record.canton).filter(Boolean)),
     ].sort();
 
     const years = this.availableYears;
@@ -564,8 +519,18 @@ export class OijService {
   async getTrends(yearValue?: string) {
     const records = await this.loadData(this.resolveYear(yearValue));
     const labels = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     const totals = Array.from({ length: 12 }, () => 0);
 
@@ -583,23 +548,39 @@ export class OijService {
   async getStatistics(options: StatisticsOptions) {
     const records = options.year
       ? await this.loadData(this.resolveYear(options.year))
-      : (await Promise.all(this.availableYears.map((year) => this.loadData(year)))).flat();
+      : (
+          await Promise.all(
+            this.availableYears.map((year) => this.loadData(year)),
+          )
+        ).flat();
     const groupBy = options.groupBy ?? 'month';
     const province = this.normalizeText(options.province ?? '');
     const crime = this.normalizeText(options.crime ?? '');
     const month = options.month?.padStart(2, '0') ?? '';
 
     const filtered = records.filter((record) => {
-      if (options.year && !record.fecha.startsWith(`${options.year}-`)) return false;
+      if (options.year && !record.fecha.startsWith(`${options.year}-`))
+        return false;
       if (month && record.fecha.slice(5, 7) !== month) return false;
-      if (province && this.normalizeText(record.provincia) !== province) return false;
+      if (province && this.normalizeText(record.provincia) !== province)
+        return false;
       if (crime && this.normalizeText(record.delito) !== crime) return false;
       return true;
     });
 
     const monthNames = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
     const values = filtered.map((record) => {
       if (groupBy === 'year') return record.fecha.slice(0, 4) || 'Sin año';
@@ -612,7 +593,10 @@ export class OijService {
     let items = this.countBy(values);
     if (groupBy === 'month') {
       items = monthNames
-        .map((name) => ({ name, total: items.find((item) => item.name === name)?.total ?? 0 }))
+        .map((name) => ({
+          name,
+          total: items.find((item) => item.name === name)?.total ?? 0,
+        }))
         .filter((item) => item.total > 0);
     }
 
@@ -628,9 +612,10 @@ export class OijService {
       items: items.map((item) => ({
         label: item.name,
         value: item.total,
-        percentage: filtered.length > 0
-          ? Number(((item.total / filtered.length) * 100).toFixed(2))
-          : 0,
+        percentage:
+          filtered.length > 0
+            ? Number(((item.total / filtered.length) * 100).toFixed(2))
+            : 0,
       })),
     };
   }
@@ -642,9 +627,7 @@ export class OijService {
     const records = await this.loadData(this.resolveYear(yearValue));
 
     return this.countBy(
-      records
-        .map((record) => record.delito)
-        .filter(Boolean),
+      records.map((record) => record.delito).filter(Boolean),
     ).map((item) => ({
       crime: item.name,
       total: item.total,
@@ -658,9 +641,7 @@ export class OijService {
     const records = await this.loadData(this.resolveYear(yearValue));
 
     return this.countBy(
-      records
-        .map((record) => record.provincia)
-        .filter(Boolean),
+      records.map((record) => record.provincia).filter(Boolean),
     );
   }
 
@@ -671,10 +652,7 @@ export class OijService {
     const counts = new Map<string, number>();
 
     for (const value of values) {
-      counts.set(
-        value,
-        (counts.get(value) ?? 0) + 1,
-      );
+      counts.set(value, (counts.get(value) ?? 0) + 1);
     }
 
     return [...counts.entries()]

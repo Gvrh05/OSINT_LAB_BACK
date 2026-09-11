@@ -4,6 +4,6 @@ import { TseService } from './tse.service';
 
 @Module({
   controllers: [TseController],
-  providers: [TseService]
+  providers: [TseService],
 })
 export class TseModule {}

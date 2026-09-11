@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -12,15 +13,15 @@ async function bootstrap() {
     origin: (process.env.FRONTEND_URL ?? 'http://localhost:5173')
       .split(',')
       .map((origin) => origin.trim()),
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
   const port = process.env.PORT ?? 3000;
-
   await app.listen(port);
-
-  console.log(`OSINT API ejecutándose en http://localhost:${port}/api`);
+  Logger.log(
+    `Backend OSINT escuchando en http://localhost:${port}/api`,
+    'Bootstrap',
+  );
 }
-
-bootstrap();
+void bootstrap();

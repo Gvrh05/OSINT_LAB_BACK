@@ -1,16 +1,10 @@
-import {
-  Controller,
-  Get,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 
 import { OijService } from './oij.service';
 
 @Controller('oij')
 export class OijController {
-  constructor(
-    private readonly oijService: OijService,
-  ) {}
+  constructor(private readonly oijService: OijService) {}
 
   @Get()
   getStatus() {
@@ -61,7 +55,13 @@ export class OijController {
     @Query('province') province?: string,
     @Query('crime') crime?: string,
   ) {
-    return this.oijService.getStatistics({ groupBy, year, month, province, crime });
+    return this.oijService.getStatistics({
+      groupBy,
+      year,
+      month,
+      province,
+      crime,
+    });
   }
 
   @Get('crimes')

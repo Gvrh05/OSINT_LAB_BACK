@@ -6,11 +6,7 @@ import { OijModule } from './oij/oij.module';
 import { SearchModule } from './search/search.module';
 
 @Module({
-  imports: [
-    TseModule,
-    OijModule,
-    SearchModule,
-  ],
+  imports: [TseModule, OijModule, SearchModule],
   controllers: [AppController],
   providers: [AppService],
 })
