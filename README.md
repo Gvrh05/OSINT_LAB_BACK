@@ -79,6 +79,7 @@ Al iniciar, el módulo TSE intenta descargar automáticamente el padrón del TSE
 | -------- | ----------- | ----------------- |
 | `PORT`   | Puerto del servidor HTTP | `3000` |
 | `FRONTEND_URL` | Orígenes permitidos por CORS, separados por comas | `http://localhost:5173` |
+| `TSE_AUTOLOAD` | Poner `false` para evitar descarga automática de datos personales en CI/despliegue | activado |
 
 Copie `.env.example` a `.env`. No se utilizan credenciales ni secretos.
 
@@ -146,6 +147,26 @@ pnpm lint        # eslint + prettier
 ```
 
 ## Uso responsable de OSINT
+
+## DevSecOps y despliegue
+
+`.github/workflows/security.yml` analiza `develop` y `master` con Semgrep (SAST), `pnpm audit` (SCA), Gitleaks (historial) y OWASP ZAP baseline (DAST). Los hallazgos no interrumpen los otros análisis: **deben revisarse en los logs**, no considerarse seguros por un check verde. Para DAST, configura en GitHub Actions → Variables la variable `APP_URL` con tu URL pública de la API terminada en `/api/health`. Si no está configurada, el job se omite. No uses localhost para el runner de GitHub.
+
+`render.yaml` es una plantilla de despliegue Render. Tras conectar **este repositorio** en Render y crear el servicio desde el Blueprint, configura `FRONTEND_URL` con la URL HTTPS del frontend, sin barra final. `TSE_AUTOLOAD=false` evita descargar el padrón nacional completo en instancias gratuitas con memoria insuficiente; el OIJ y la API general funcionan sin esa carga. Si necesitas TSE completo, emplea una instancia autorizada con RAM suficiente y habilita la carga según la política de tratamiento de datos personales. Comprueba públicamente `/api/health`, `/api/oij` y CORS desde el navegador. Tener la plantilla **no equivale a un despliegue realizado**.
+
+Análisis manual en PowerShell (en esta carpeta):
+
+```powershell
+python -m pip install semgrep
+semgrep scan --config auto .
+pnpm audit --audit-level low
+winget install Gitleaks.Gitleaks
+gitleaks git --source . --redact
+New-Item -ItemType Directory -Force reports | Out-Null
+docker run --rm -v "${PWD}/reports:/zap/wrk/:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://TU-API-PUBLICA/api/health -r zap-back.html -I
+```
+
+Ejecuta ZAP únicamente sobre sitios propios o autorizados. El reporte queda en `reports/zap-back.html`; no publiques datos personales en artefactos ni logs. En local, las pruebas unitarias se ejecutan con `pnpm test --runInBand`.
 
 - El padrón del TSE contiene datos personales de las personas inscritas. La ley de protección de datos (Ley 8968) y el propio TSE restringen su uso.
 - Para este proyecto académico la aplicación trabaja con **agregados y estadísticas** (electores por provincia, cantón y distrito), y no construye buscadores masivos de perfiles individuales.
