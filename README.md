@@ -161,7 +161,7 @@ python -m pip install semgrep
 semgrep scan --config auto .
 pnpm audit --audit-level low
 winget install Gitleaks.Gitleaks
-gitleaks git --source . --redact
+gitleaks git . --redact
 New-Item -ItemType Directory -Force reports | Out-Null
 docker run --rm -v "${PWD}/reports:/zap/wrk/:rw" ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://TU-API-PUBLICA/api/health -r zap-back.html -I
 ```
