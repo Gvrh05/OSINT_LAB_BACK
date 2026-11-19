@@ -1,0 +1,9 @@
+rules:
+  - id: osint-local-file-loading
+    languages: [typescript]
+    severity: WARNING
+    message: 'El servicio puede leer un archivo local; verificar que el endpoint público no acepte filePath y que ALLOW_LOCAL_PADRON_FILE permanezca desactivado.'
+    metadata:
+      category: security
+      cwe: 'CWE-73: External Control of File Name or Path'
+    pattern: 'return readFile(localPath)'

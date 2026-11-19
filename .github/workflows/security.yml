@@ -29,6 +29,9 @@ jobs:
       - name: Semgrep SAST
         continue-on-error: true
         run: semgrep scan --config auto .
+      - name: Regla local OSINT - ruta de archivo
+        continue-on-error: true
+        run: semgrep scan --config .semgrep/osint.yml src
   sca:
     runs-on: ubuntu-latest
     steps:
