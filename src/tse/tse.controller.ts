@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Post, Query } from '@nestjs/common';
 import { TseService, LoadMetadata } from './tse.service';
 
 @Controller('tse')
@@ -7,6 +7,12 @@ export class TseController {
 
   @Post('download')
   download(@Body() body: { filePath?: string }): Promise<LoadMetadata> {
+    if (process.env.TSE_DOWNLOAD_ENABLED === 'false') {
+      throw new ForbiddenException('La descarga manual está deshabilitada en este despliegue.');
+    }
+    if (body?.filePath && process.env.ALLOW_LOCAL_PADRON_FILE !== 'true') {
+      throw new ForbiddenException('La carga desde archivos locales requiere habilitación explícita.');
+    }
     return this.tseService.downloadAndLoadPadron(body?.filePath);
   }
 
