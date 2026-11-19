@@ -71,6 +71,8 @@ export class TseService implements OnApplicationBootstrap {
   private statsCache: TseStatsData | null = null;
 
   onApplicationBootstrap() {
+    // Evita descargar el padrón completo en CI o en instancias de demostración.
+    if (process.env.TSE_AUTOLOAD === 'false') return;
     this.downloadAndLoadPadron().catch((error) => {
       this.logger.warn(
         `No se pudo precargar el padrón al iniciar: ${(error as Error).message}. ` +
