@@ -24,4 +24,9 @@ describe('AppController', () => {
       expect(info.rutas.tse.download).toContain('/api/tse/download');
     });
   });
+
+  it('publica enlaces estáticos para el escaneo pasivo de ZAP', () => {
+    expect(appController.getScanIndex()).toContain('href="/api/health"');
+    expect(appController.getScanIndex()).toContain('href="/api/oij"');
+  });
 });
