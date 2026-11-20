@@ -48,6 +48,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Comprobar acceso público antes de ZAP
+        env:
+          TARGET_URL: ${{ vars.APP_URL }}
+        run: |
+          curl --fail --show-error --silent --location --retry 6 --retry-all-errors --retry-delay 10 --max-time 35 "$TARGET_URL" > /dev/null
+          echo "El destino responde correctamente: $TARGET_URL"
       - name: ZAP baseline - API pública autorizada
         continue-on-error: true
         uses: zaproxy/action-baseline@v0.14.0
